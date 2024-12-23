@@ -171,8 +171,8 @@ impl TextGeneration {
             // 每生成100个词记录一次
             if generated_tokens % 100 == 0 {
                 let dt = start_gen.elapsed(); // 计算生成总时间
-                println!(
-                    "\x1b[31m现在已经运行了{:?}，已经生成了{}个tokens，平均生成速度是{:.2} token/s!!!\x1b[0m",
+                print!(
+                    "\x1b[31m$@#现在已经运行了{:?}，已经生成了{}个tokens，平均生成速度是{:.2} token/s!$@#\x1b[0m",
                     dt,
                     generated_tokens,
                     generated_tokens as f64 / dt.as_secs_f64(), // 计算生成速度
@@ -187,8 +187,8 @@ impl TextGeneration {
             print!("{rest}"); // 输出未解码的 tokens
         }
         std::io::stdout().flush()?;
-        println!(
-            "\x1b[31m现在已经运行了{:?}，已经生成了{}个tokens，平均生成速度是{:.2} token/s!!!\x1b[0m",
+        print!(
+            "\x1b[31m$@#现在已经运行了{:?}，已经生成了{}个tokens，平均生成速度是{:.2} token/s!$@#\x1b[0m",
             dt,
             generated_tokens,
             generated_tokens as f64 / dt.as_secs_f64(), // 计算生成速度
@@ -313,7 +313,7 @@ fn main() -> Result<()> {
     let start = std::time::Instant::now(); // 记录时间，计算加载过程耗时
 
     // 模型和分词器的本地文件路径
-    let model_dir = "/home/wzr/.cache/huggingface/hub/models--Qwen--Qwen1.5-0.5B/snapshots/8f445e3628f3500ee69f24e1303c9f10f5342a39";
+    let model_dir = "/Qwen_Qwen1.5-0.5B";
     let tokenizer_filename = match args.tokenizer_file {
         Some(file) => std::path::PathBuf::from(file), // 使用用户指定的分词器文件
         None => std::path::PathBuf::from(format!("{}/tokenizer.json", model_dir)), // 若未指定，则使用默认路径
