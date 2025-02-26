@@ -145,33 +145,33 @@ impl Module for MLP {
 
 #[derive(Debug, Clone)]
 #[repr(align(64))]
-struct H2OCache {
-    hh_k: VecDeque<Tensor>,       // Heavy Hitters的K缓存
-    hh_v: VecDeque<Tensor>,       // Heavy Hitters的V缓存
-    recent_k: VecDeque<Tensor>,   // Recent的K缓存
-    recent_v: VecDeque<Tensor>,   // Recent的V缓存
-    hh_scores: VecDeque<f64>,     // Heavy Hitters的累计attention分数
-    recent_scores: VecDeque<f64>, // Recent的累计attention分数
-    hh_capacity: usize,           // Heavy Hitters容量
-    recent_capacity: usize,       // Recent容量
-    num_heads: usize,             // 多头注意力的头数
-    head_dim: usize,              // 每个头的维度
+struct DOUBLECache {
+    hh_k: VecDeque<Tensor>,
+    hh_v: VecDeque<Tensor>,
+    recent_k: VecDeque<Tensor>,
+    recent_v: VecDeque<Tensor>,
+    hh_scores: VecDeque<f64>,
+    recent_scores: VecDeque<f64>,
+    hh_capacity: usize,
+    recent_capacity: usize,
+    num_heads: usize,
+    head_dim: usize,
 }
 
-impl H2OCache {
+impl DOUBLECache {
     // !
     fn print_memory_layout(&self) {
         // 获取结构体信息
-        let start_addr = self as *const H2OCache;
-        let size = std::mem::size_of::<H2OCache>();
+        let start_addr = self as *const DOUBLECache;
+        let size = std::mem::size_of::<DOUBLECache>();
         let end_addr = unsafe { (start_addr as *const u8).add(size) };
 
-        println!("\n=== H2OCache 详细内存布局 ===");
+        println!("\n=== DOUBLECache 详细内存布局 ===");
         println!("整体信息:");
         println!("起始地址: {:p}", start_addr);
         println!("结尾地址: {:p}", end_addr);
         println!("总大小: {} 字节", size);
-        println!("对齐方式: {} 字节", std::mem::align_of::<H2OCache>());
+        println!("对齐方式: {} 字节", std::mem::align_of::<DOUBLECache>());
 
         println!("\nVecDeque 缓存信息:");
         println!(
@@ -214,35 +214,35 @@ impl H2OCache {
 
         // 打印每个字段的偏移量
         println!("\n字段偏移量:");
-        println!("hh_k offset: {}", memoffset::offset_of!(H2OCache, hh_k));
-        println!("hh_v offset: {}", memoffset::offset_of!(H2OCache, hh_v));
+        println!("hh_k offset: {}", memoffset::offset_of!(DOUBLECache, hh_k));
+        println!("hh_v offset: {}", memoffset::offset_of!(DOUBLECache, hh_v));
         println!(
             "recent_k offset: {}",
-            memoffset::offset_of!(H2OCache, recent_k)
+            memoffset::offset_of!(DOUBLECache, recent_k)
         );
         println!(
             "recent_v offset: {}",
-            memoffset::offset_of!(H2OCache, recent_v)
+            memoffset::offset_of!(DOUBLECache, recent_v)
         );
         println!(
             "hh_scores offset: {}",
-            memoffset::offset_of!(H2OCache, hh_scores)
+            memoffset::offset_of!(DOUBLECache, hh_scores)
         );
         println!(
             "recent_scores offset: {}",
-            memoffset::offset_of!(H2OCache, recent_scores)
+            memoffset::offset_of!(DOUBLECache, recent_scores)
         );
         println!(
             "hh_capacity offset: {}",
-            memoffset::offset_of!(H2OCache, hh_capacity)
+            memoffset::offset_of!(DOUBLECache, hh_capacity)
         );
         println!(
             "recent_capacity offset: {}",
-            memoffset::offset_of!(H2OCache, recent_capacity)
+            memoffset::offset_of!(DOUBLECache, recent_capacity)
         );
         println!(
             "num_heads offset: {}",
-            memoffset::offset_of!(H2OCache, num_heads)
+            memoffset::offset_of!(DOUBLECache, num_heads)
         );
     }
 
@@ -250,8 +250,8 @@ impl H2OCache {
 
     // !有处理空间
     fn new(total_capacity: usize, num_heads1: usize, head_dim1: usize) -> Self {
-        let hh_capacity = total_capacity / 7;
-        let recent_capacity = 6 * total_capacity / 7;
+        let hh_capacity = 2 * total_capacity / 14;
+        let recent_capacity = 12 * total_capacity / 14;
         // println!("\nhh:{} | R{}\n", hh_capacity, recent_capacity);
         Self {
             hh_k: VecDeque::with_capacity(hh_capacity),
@@ -495,7 +495,7 @@ struct Attention {
     head_dim: usize,                  // 每个头的维度
     hidden_size: usize,               // 隐藏层维度
     rotary_emb: Arc<RotaryEmbedding>, // 旋转嵌入，用于位置编码
-    kv_cache: Option<H2OCache>,       // 替换为H2OCache
+    kv_cache: Option<DOUBLECache>,    // 替换为DOUBLECache
 }
 
 impl Attention {
@@ -570,9 +570,9 @@ impl Attention {
         // 处理KV cache
         let (key_states, value_states) = match &mut self.kv_cache {
             None => {
-                // 首次使用，创建新的H2OCache
+                // 首次使用，创建新的DOUBLECache
                 // ! 设置适当的容量
-                let mut cache = H2OCache::new(total_capacity, self.num_heads, self.head_dim);
+                let mut cache = DOUBLECache::new(total_capacity, self.num_heads, self.head_dim);
                 cache.insert(&query_states, key_states.clone(), value_states.clone())?;
                 // !!!!!!!!!!!!!!!!!
                 // cache.printRecentK();
